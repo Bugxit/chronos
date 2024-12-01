@@ -25,7 +25,7 @@ class Event:
             fmt += str(self.day) + " "
         
         if 1 <= self.month <= 12:
-            fmt += ["J", "F", "M", "A", "Mai", "Juin", "Juillet", "Aout", "Sept", "Oct", "Nov", "Dec"][self.month - 1] + " "
+            fmt += ["Jan", "Fev", "Mar", "Avr", "Mai", "Jui", "Jui", "Aou", "Sep", "Oct", "Nov", "Dec"][self.month - 1] + " "
 
         if type(self.year) == int:
             fmt += str(self.year)
@@ -63,7 +63,7 @@ class Timeline:
             Affiche la liste des évènements et des périodes dans le shell
         """
 
-        for event in listEvent:
+        for event in self.listEvent:
             print( event.display() )
 
 
@@ -78,20 +78,27 @@ class Timeline:
         """
             Dessine la frise en utilisant la bibliothèque svgnsi.
         """
+
+        getTimecode = lambda e : e.timecode
+
+        eventsToDisplay = sorted(self.listEvent, key=getTimecode)
+        eventsTimeCodes = list(map( getTimecode, eventsToDisplay ))
+
+        minGapBetweenTwoDates = min([eventsTimeCodes[i + 1] - eventsTimeCodes[i] for i in range(len(eventsTimeCodes) - 1)])
+        maxGapBetweenTwoDates = max(eventsTimeCodes) - min(eventsTimeCodes)
         
-        w = len(self.listEvent) * 40
-        h = 150
+        width = ( 25 * maxGapBetweenTwoDates ) // minGapBetweenTwoDates + 200
+        height = 150 
 
-        img = Draw(w, h)
+        img = Draw(width, height)
         img.generate()
-        img.line(0, 135, w, 135, "black", 2)
+        img.line(0, 135, width, 135, "black", 2)
 
-        x = 10
+        timecodeToXOffset = lambda t : ( 25 * (t - min(eventsTimeCodes)) ) // minGapBetweenTwoDates + 10
+        for timecode, event in zip(eventsTimeCodes, eventsToDisplay):
+            xOffset = timecodeToXOffset(timecode)
+            img.text(xOffset, 130, event.display(), "black", 1, "black", "10", rotate = 45)
 
-        for event in self.listEvent:
-            img.text(x, 130, event.display(), "black", 1, "red", "10", rotate = 45)
-
-            x += 20
         img.save("output.svg")
 
 # Création de frise avec quelques BD d'Astérix
