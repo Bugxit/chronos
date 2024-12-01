@@ -1,4 +1,5 @@
 from svgnsi import *
+from colorama import Fore
 
 class Event:
     """
@@ -35,13 +36,22 @@ class Event:
         return fmt
 
 class Period:
-    def __init__(self): pass
-
     """
         Période définie par un titre et deux évènements (un pour le début et un pour la fin)
         Le titre des évènement n'a pas d'importance.
     """
-    pass
+
+    def __init__(self, title: str, startEvent: Event, lastEvent: Event):
+        self.title = title
+        self.startEvent = startEvent
+        self.lastEvent = lastEvent
+
+        self.timecode = startEvent.timecode
+        self.endTimecode = lastEvent.timecode
+
+    def display(self):
+        pass
+
 
 class Timeline:
     """
@@ -51,12 +61,15 @@ class Timeline:
 
     def __init__(self, name):
         self.listEvent = []
+        self.listPeriod = []
         self.name = name
 
     def addEvent(self, event):
         self.listEvent.append(event)
-        ## On remet la lsite dans l'ordre chronologique
-        self.listEvent.sort(key=lambda event: event.timecode)
+        self.listEvent.sort(key=lambda e : e.timecode)
+
+    def addPeriod(self, period):
+        self.listPeriod.append(period)
 
     def display(self):
         """
@@ -64,7 +77,16 @@ class Timeline:
         """
 
         for event in self.listEvent:
-            print( event.display() )
+            periodStartingWithEvent = [p for p in self.listPeriod if p.timecode == event.timecode]
+            periodEndingWithEvent = [p for p in self.listPeriod if p.endTimecode == event.timecode]
+
+            for p in periodStartingWithEvent:
+                print(f"# {Fore.CYAN}{p.title}{Fore.RESET}")
+
+            print(event.display())
+            
+            for p in periodEndingWithEvent:
+                print(f"# {Fore.RED}{p.title}{Fore.RESET}")
 
 
     def minMaxEvent(self):
@@ -81,14 +103,14 @@ class Timeline:
 
         getTimecode = lambda e : e.timecode
 
-        eventsToDisplay = sorted(self.listEvent, key=getTimecode)
+        eventsToDisplay = self.listEvent
         eventsTimeCodes = list(map( getTimecode, eventsToDisplay ))
 
         minGapBetweenTwoDates = min([eventsTimeCodes[i + 1] - eventsTimeCodes[i] for i in range(len(eventsTimeCodes) - 1)])
         maxGapBetweenTwoDates = max(eventsTimeCodes) - min(eventsTimeCodes)
         
         width = ( 25 * maxGapBetweenTwoDates ) // minGapBetweenTwoDates + 200
-        height = 150 
+        height = 200 
 
         img = Draw(width, height)
         img.generate()
@@ -103,6 +125,7 @@ class Timeline:
 
 # Création de frise avec quelques BD d'Astérix
 timeline = Timeline("asterix")
+
 timeline.addEvent(Event("Astérix le Gaulois", 0, 0, 1961))
 timeline.addEvent(Event("La serpe d'or", 0, 0, 1962))
 timeline.addEvent(Event("Astérix chez les Pictes", 0, 0, 2013))
@@ -115,4 +138,9 @@ timeline.addEvent(Event("Le ciel lui tombe sur la tête",0,0,2005))
 timeline.addEvent(Event("Astérix chez Rahàzade",0,0,1987))
 timeline.addEvent(Event("Astérix gladiateur",0,0,1964))
 
+timeline.addPeriod(Period("Goscinny", Event("Astérix le Gaulois", 0, 0, 1961), Event("Astérix en Corse",0,0,1973)))
+timeline.addPeriod(Period("Uderzo", Event("Le grand fossé",0,0,1980), Event("Le ciel lui tombe sur la tête",0,0,2005)))
+timeline.addPeriod(Period("Ferri", Event("Astérix chez les Pictes", 0, 0, 2013), Event("La Fille de Vercingétorix",24,10,2019)))
+
+timeline.display()
 timeline.toSVG()
